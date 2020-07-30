@@ -85,7 +85,7 @@ export default {
     };
 
     // make graphql api call to fetch holidays as per usr holidays.
-    console.log("making graphql call to fetch holiday");
+    console.log("making graphql call to fetch holiday--");
     fetch(url, opts)
       .then(res => res.json())
       .then(result => {
