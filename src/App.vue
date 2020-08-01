@@ -6,6 +6,8 @@
       <b-tab title="Apply Leave " active> <leave-apply :key="componentKey" v-on:ChangeView="this.forceRerender"></leave-apply></b-tab>
       <b-tab title="Approve leave"> <leave-approve :key="approveKey" v-on:ChangeLeaveApproveView="this.reRenderApproveLeave" > </leave-approve> </b-tab>
       <b-tab title="Holidays"><holidays :key="holidayKey"> </holidays></b-tab>
+      <b-tab title="Users"><users :key="userKey"> </users></b-tab>
+      <b-tab title="Companies"><companies :key="userKey"> </companies></b-tab>
     </b-tabs>
   </b-card>
    
@@ -22,20 +24,26 @@
 import LeaveApply from "./components/LeaveApply.vue";
 import LeaveApprove from "./components/LeaveApprove.vue";
 import Holidays from './components/Holidays.vue';
+import Users from './components/Users.vue';
+import Companies from './components/Companies.vue';
 
 export default {
   name: "App",
   components: {
     LeaveApply,
     LeaveApprove,
-    Holidays
+    Holidays,
+    Users,
+    Companies
   },
   data() {
     return {
       message : "",
       componentKey: 0,
       approveKey : 0,
-      holidayKey : 0
+      holidayKey : 0,
+      userKey : 0,
+      companyKey : 0
     };
   },
   methods: {
