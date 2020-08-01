@@ -1,0 +1,7 @@
+mutation leave_entity_and_locations($entity_locs : [leave_app_entity_insert_input!]!) {
+  insert_leave_app_entity(objects: $entity_locs ) {
+    returning {
+      id
+    }
+  }   
+}

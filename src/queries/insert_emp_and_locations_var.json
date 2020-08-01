@@ -1,0 +1,17 @@
+{
+	"entity_locs": [{
+		"name": "intellect design arena",
+		"short_name": "intellect",
+		"entity_locations": {
+			"data": [{
+					"code": "HYD",
+					"name": "Hyderabad"
+				},
+				{
+					"code": "PUN",
+					"name": "Pune"
+				}
+			]
+		}
+	}]
+}

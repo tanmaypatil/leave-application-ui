@@ -281,7 +281,6 @@ export default {
       body: JSON.stringify({ query: query, variables: variables })
     };
 
-    // var that = this;
     // Make the graphql call
     fetch(url, opts)
       .then(res => res.json())
