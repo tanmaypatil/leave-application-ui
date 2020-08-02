@@ -1,0 +1,8 @@
+query entity_locations($company_short_name : String!) {
+  leave_app_entity_location(where: {entity: {short_name: {_eq: $company_short_name}}}) {
+    id
+    entity_id
+    name
+    code
+  }
+}

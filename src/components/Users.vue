@@ -28,15 +28,40 @@
         </b-row>
         <b-row>
           <b-col cols="4">
-            <label for="company">select company</label>
-            <vue-bootstrap-typeahead id="company" v-model="company_name" :data="entity_list" />
+            <label for="company">company (enter short name)</label>
+            <vue-bootstrap-typeahead
+              class="mb-4"
+              placeholder="Enter short name"
+              id="company"
+              v-model="company_name"
+              v-on:hit="populateLocations"
+              :data="entity_list"
+            />
           </b-col>
-             <b-col cols="4">
-            <label for="company">select location</label>
-            <vue-bootstrap-typeahead id="location" v-model="company_location" :data="['Canada', 'USA', 'Mexico']" />
+          <b-col cols="2"></b-col>
+          <b-col cols="4">
+            <label for="location">select location</label>
+            <vue-bootstrap-typeahead
+              placeholder="Enter location"
+              id="location"
+              v-model="company_location"
+              :data="entity_locations"
+              :serializer="item => item.name"
+            />
           </b-col>
         </b-row>
+        <b-col cols="4">
+          <label for="manager">select manager</label>
+          <vue-bootstrap-typeahead
+            placeholder="Enter manager name"
+            id="manager"
+            v-model="manager_name"
+            :data="emp_list"
+            :serializer="item => item.emp_name"
+          />
+        </b-col>
 
+        <b-row></b-row>
         <b-row>
           <!-- <div class="mt-3">Selected: <strong>{{ locations }}</strong></div> -->
         </b-row>
@@ -58,53 +83,166 @@
 <script>
 export default {
   name: "users",
+  computed: {
+    nameState() {
+      return this.user_name.length > 0 ? true : false;
+    },
+    emailState() {
+      return this.user_email.length > 0 ? true : false;
+    }
+  },
   data() {
     return {
       user_name: "",
       user_email: "",
-      company_name : "",
-      company_location : "",
-      entity_list : []
+      company_name: "",
+      company_location: "",
+      entity_list: [],
+      entity_locations: [],
+      emp_list: [],
+      manager_name: "",
+      message: "user added succesfully"
     };
   },
-  created () {
-      /* fetch the companies registered for leave application 
-         so that we can show in type ahead 
+  created() {
+    /* 1) fetch the companies registered for leave application 
+       so that we can show in type ahead 
+       2) Also fetch employees so that manager can be selected 
       */
-     let query = `
-     query entity {
-       leave_app_entity {
-       name
-       short_name
-       }
-     }`;
+     this.fetchEntities()
+     .then(this.fetchEmployees())
+     .catch(error=> { console.log("created error "+error)})
+     
+  },
+  methods: {
+    fetchEntities: function() {
+      return new Promise((resolve, reject) => {
+        let query = `
+          query entity {
+          leave_app_entity {
+            name
+            short_name
+          }
+        }`;
+        let variables = {};
+        const url = process.env.VUE_APP_GRAPHQL_URL;
+        const opts = {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: query, variables: variables })
+        };
 
-     let variables = {
-     };
-    const url = process.env.VUE_APP_GRAPHQL_URL;
-    const opts = {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: query, variables: variables })
-    };
-    fetch(url, opts)
-      .then(res => res.json())
-      .then(result => {
-          if(result && result.data && result.data.leave_app_entity && result.data.leave_app_entity.length > 0 ) {
-              for(let entity of result.data.leave_app_entity ) {
-                 this.entity_list.push(entity.short_name);
+        fetch(url, opts)
+          .then(res => res.json())
+          .then(result => {
+            if (
+              result &&
+              result.data &&
+              result.data.leave_app_entity &&
+              result.data.leave_app_entity.length > 0
+            ) {
+              for (let entity of result.data.leave_app_entity) {
+                this.entity_list.push(entity.short_name);
               }
-              console.log("entity_list "+JSON.stringify(this.entity_list));
-          }
-          else if (result.error) {
+              console.log("entity_list " + JSON.stringify(this.entity_list));
+              resolve(this.entity_list);
+            } else if (result.error) {
               console.log(result.error);
+              reject(result.error);
+            }
+          })
+          .catch(error => {
+            console.log(error);
+            reject(error);
+          });
+      });
+    },
+    fetchEmployees: function() {
+        return new Promise((resolve, reject) => {
+        let query = `
+          query all_employees {
+          leave_app_employee {
+            emp_name
+            id
           }
-      })
-      .catch(error => {
-          console.log(error);
-      }) ;
+        }`;
+        let variables = {};
+        const url = process.env.VUE_APP_GRAPHQL_URL;
+        const opts = {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: query, variables: variables })
+        };
 
-
+        fetch(url, opts)
+          .then(res => res.json())
+          .then(result => {
+            if (
+              result &&
+              result.data &&
+              result.data.leave_app_employee &&
+              result.data.leave_app_employee.length > 0
+            ) {
+              for (let emp of result.data.leave_app_employee) {
+                this.emp_list.push(emp);
+              }
+              console.log("emp_list " + JSON.stringify(this.emp_list));
+              resolve(this.emp_list);
+            } else if (result.error) {
+              console.log(result.error);
+              reject(result.error);
+            }
+          })
+          .catch(error => {
+            console.log(error);
+            reject(error);
+          });
+      });
+    },
+    populateLocations: function(selectedEntity) {
+      console.log("inside company value selected " + selectedEntity);
+      /* For selected company , we need to select locations .
+         fire a graphql query 
+         select entity_id , location id we are storing keys into user table 
+      */
+      let query = `
+      query entity_locations($company_short_name : String!) {
+        leave_app_entity_location(where: {entity: {short_name: {_eq: $company_short_name}}}) {
+          id
+          entity_id
+          name
+          code
+        }
+      } `;
+      // query by selected entity ( short company name)
+      let variables = {
+        company_short_name: selectedEntity
+      };
+      const url = process.env.VUE_APP_GRAPHQL_URL;
+      const opts = {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: query, variables: variables })
+      };
+      fetch(url, opts)
+        .then(res => res.json())
+        .then(result => {
+          if (
+            result &&
+            result.data &&
+            result.data.leave_app_entity_location &&
+            result.data.leave_app_entity_location.length > 0
+          ) {
+            for (let loc of result.data.leave_app_entity_location) {
+              this.entity_locations.push(loc);
+            }
+          }
+        })
+        .catch(error => {
+          console.log("error in selecting locations" + error);
+        });
+    },
+    addCompany: function() {}
   }
 };
 </script>
